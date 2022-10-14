@@ -1,5 +1,6 @@
 from collections import namedtuple
 import os
+import sys
 import ffmpeg
 import subprocess
 import shlex
@@ -70,13 +71,13 @@ def crop_to_square(input_file: str, output_file: str, output_res: str, scaling_c
         .run()
     )
 
-def main():
+def main(args):
     parser = argparse.ArgumentParser(description="Mana's video processing script")
     parser.add_argument("input-dir", required=True, help="The input directory to process")
     parser.add_argument("--output-dir", default=None, help="The output directory. If none specified, creates a directory called \"output\" inside the input directory")
     parser.add_argument("--time-scale", default=10.52, help="The timescale to normalize input files to")
     parser.add_argument("--output-resolution", default="480", help="The output resolution. All output is square, so only one number is required")
-    args = parser.parse_args()
+    args = parser.parse_args(args)
     
     input_dir = args["input-dir"]
     if args["output-dir"] is None:
@@ -95,4 +96,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1:])
