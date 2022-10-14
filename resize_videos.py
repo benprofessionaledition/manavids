@@ -1,9 +1,11 @@
 from collections import namedtuple
+import os
 import ffmpeg
-import numpy as np
 import subprocess
 import shlex
 import json
+import argparse
+from tqdm import tqdm
 
 import logging
 logging.basicConfig(level=logging.DEBUG)
@@ -31,9 +33,9 @@ def probe_video(filename: str) -> VideoInfo:
     return VideoInfo(int(height), int(width), float(duration))
 
 
-def crop_to_square(filepath, scaling_constant=SCALING_DEFAULT):
+def crop_to_square(input_file: str, output_file: str, output_res: str, scaling_constant: float=SCALING_DEFAULT):
     # crop to 1:1, change speed, clip at 3 and 6 seconds, paste reversed, export at 480x480
-    info = probe_video(filepath)
+    info = probe_video(input_file)
 
     # figure out normalized timestamps
     curr_duration = info.duration_seconds
@@ -41,7 +43,7 @@ def crop_to_square(filepath, scaling_constant=SCALING_DEFAULT):
 
     stream = (
         ffmpeg
-        .input(filepath)
+        .input(input_file)
         .filter('crop', 'in_h', 'in_h')  # crop to 1:1
         # make them play for exactly the same length, since the exported videos will be slightly different
         .filter('setpts', f'PTS*{scaling_factor}')
@@ -51,7 +53,7 @@ def crop_to_square(filepath, scaling_constant=SCALING_DEFAULT):
         .filter('setpts', 'PTS-STARTPTS')
         # 30 fps, 480x480
         .filter('fps', fps=30, round='up')
-        .filter('scale', '480', '480')
+        .filter('scale', output_res, output_res)
         .split()
     )
 
@@ -63,11 +65,34 @@ def crop_to_square(filepath, scaling_constant=SCALING_DEFAULT):
 
     (
         ffmpeg.concat(stream[0], stream_rev)
-        .output("resources/cropped.mp4")
+        .output(output_file)
         .overwrite_output()
         .run()
     )
 
+def main():
+    parser = argparse.ArgumentParser(description="Mana's video processing script")
+    parser.add_argument("input-dir", required=True, help="The input directory to process")
+    parser.add_argument("--output-dir", default=None, help="The output directory. If none specified, creates a directory called \"output\" inside the input directory")
+    parser.add_argument("--time-scale", default=10.52, help="The timescale to normalize input files to")
+    parser.add_argument("--output-resolution", default="480", help="The output resolution. All output is square, so only one number is required")
+    args = parser.parse_args()
+    
+    input_dir = args["input-dir"]
+    if args["output-dir"] is None:
+        output_dir = os.path.join(input_dir, "processed_output")
+    else:
+        output_dir = args["output-dir"]
+
+    time_scale = args["time-scale"]
+    output_resolution = args["output-resolution"]
+    
+    for filename in tqdm(os.listdir(input_dir)):
+        input_file = os.path.join(input_dir, filename)
+        output_file = os.path.join(output_dir, filename)
+        time_scale=float(time_scale)
+        crop_to_square(input_file, output_file, output_resolution, time_scale)
+
 
 if __name__ == '__main__':
-    crop_to_square("resources/PulsedogeGenerative_00.mp4")
+    main()
