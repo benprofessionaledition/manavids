@@ -6,7 +6,7 @@ import subprocess
 import shlex
 import json
 import argparse
-from tqdm import tqdm
+from joblib import delayed, Parallel
 
 import logging
 logging.basicConfig(level=logging.DEBUG)
@@ -90,13 +90,17 @@ def main(args):
     time_scale = args.time_scale
     output_resolution = args.output_resolution
     
-    for filename in tqdm(os.listdir(input_dir)):
-        if not filename.endswith(".mp4"):
-            continue
+    def __execute(filename: str):
+        nonlocal input_dir, output_dir, time_scale
         input_file = os.path.join(input_dir, filename)
         output_file = os.path.join(output_dir, filename)
-        time_scale=float(time_scale)
+        time_scale= float(time_scale)
         crop_to_square(input_file, output_file, output_resolution, time_scale)
+
+    filenames = [f for f in os.listdir(input_dir) if f.endswith(".mp4")]
+
+    # joblib has the worst syntax ever
+    Parallel(n_jobs=-1)(delayed(__execute)(f) for f in filenames)
 
 
 if __name__ == '__main__':
