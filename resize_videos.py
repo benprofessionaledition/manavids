@@ -85,10 +85,14 @@ def main(args):
     else:
         output_dir = args.output_dir
 
+    os.makedirs(output_dir, exist_ok=True)
+
     time_scale = args.time_scale
     output_resolution = args.output_resolution
     
     for filename in tqdm(os.listdir(input_dir)):
+        if not filename.endswith(".mp4"):
+            continue
         input_file = os.path.join(input_dir, filename)
         output_file = os.path.join(output_dir, filename)
         time_scale=float(time_scale)
