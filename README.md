@@ -19,10 +19,12 @@ Scripts include:
 
 Assume everything has to be run in Powershell as an administrator. 
 
+1. Install Github Desktop 
 1. Install Python 3.8+. This is outside the scope of this documentation, just download a binary installer, maybe use pre-3.10 if possible but it probably doesn't matter. See Above for hints
 1. Run this command to make it so Powershell can run scripts:
     ```
     Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy Unrestricted
     ```
 1.  Install FFmpeg on Windows using this guide: https://www.wikihow.com/Install-FFmpeg-on-Windows
+1.  Create Python virtualenv and do `py -m pip install -r requirements.txt` and activate it, as above
 1.  Run the scripts, see above. Should work.
