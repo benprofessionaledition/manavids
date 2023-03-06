@@ -172,7 +172,7 @@ def stitch(args: argparse.Namespace, clean: bool=True):
     with open(txt_filename, "w+") as outf:
         outf.writelines("\n".join(filenames))
     output_filename = os.path.join(output_dir, "output.mp4")
-    # blow it away because we lose the interactive console with joblib
+    # blow it away because we lose the interactive console with joblib and ffmpeg wants input
     if os.path.exists(output_filename):
         os.remove(output_filename)
     cmd = f"ffmpeg -f concat -safe 0 -i {txt_filename} -c copy {output_filename}"
