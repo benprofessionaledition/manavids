@@ -173,7 +173,7 @@ def stitch(args: argparse.Namespace, clean: bool=True):
                 .run()
         )
 
-    p = Parallel(n_jobs=-1, prefer="threads")(delayed(__execute)(i,f) for i,f in index_vidname_tuples)
+    Parallel(n_jobs=-1, prefer="threads")(delayed(__execute)(i,f) for i,f in index_vidname_tuples)
     # concat video files: ffmpeg -f concat -safe 0 -i mylist.txt -c copy output.mp4
     # the blessed way to concat files is to create a text file of filenames: "file [filepath]"
     filenames = [f"file '{f}'" for f in _ls(tmp_dir)]
