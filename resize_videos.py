@@ -9,6 +9,7 @@ import subprocess
 import shlex
 import json
 import argparse
+from joblib import Parallel, delayed
 from tqdm import tqdm
 
 import logging
@@ -37,7 +38,7 @@ def probe_video(filename: str) -> VideoInfo:
     return VideoInfo(int(height), int(width), float(duration))
 
 
-def crop_to_square(input_file: str, output_file: str, output_res: str, scaling_constant: float=SCALING_DEFAULT):
+def resize_and_bounce(input_file: str, output_file: str, output_res: str, scaling_constant: float=SCALING_DEFAULT):
     # crop to 1:1, change speed, clip at 3 and 6 seconds, paste reversed, export at 480x480
     info = probe_video(input_file)
 
@@ -88,13 +89,18 @@ def resize(args: argparse.Namespace):
     time_scale: float = args.time_scale
     output_resolution: int = args.output_resolution
     
-    for filename in tqdm(os.listdir(input_dir)):
+    def __execute(filename):
         if not filename.endswith(".mp4"):
-            continue
+            return
         input_file = os.path.join(input_dir, filename)
         output_file = os.path.join(output_dir, filename)
         time_scale=float(time_scale)
-        crop_to_square(input_file, output_file, output_resolution, time_scale)
+        resize_and_bounce(input_file, output_file, output_resolution, time_scale)
+
+    filenames = [f for f in os.listdir(input_dir) if f.endswith(".mp4")]
+
+    # joblib has the worst syntax ever
+    Parallel(n_jobs=-1)(delayed(__execute)(f) for f in filenames)
 
 def _ls(directory):
     return sorted((os.path.join(directory, f)) for f in os.listdir(directory))
@@ -165,7 +171,7 @@ def stitch(args: argparse.Namespace, clean: bool=True):
     output_filename = os.path.join(output_dir, "output.mp4")
     cmd = f"ffmpeg -f concat -safe 0 -i {txt_filename} -c copy {output_filename}"
     subprocess.run(shlex.split(cmd))
-    # shutil.rmtree(tmp_dir)
+    shutil.rmtree(tmp_dir)
 
 def main(args):
 
