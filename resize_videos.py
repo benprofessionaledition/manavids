@@ -1,6 +1,6 @@
-import atexit
 from collections import namedtuple
 import os
+import random
 import shutil
 import sys
 import time
@@ -10,7 +10,6 @@ import shlex
 import json
 import argparse
 from joblib import Parallel, delayed
-from pprint import pprint
 
 import logging
 logging.basicConfig(level=logging.DEBUG)
@@ -120,6 +119,17 @@ def stitch(args: argparse.Namespace, clean: bool=True):
     # get all videos
     video_filenames = sorted([os.path.join(input_dir, f) for f in os.listdir(input_dir) if f.endswith(".mp4")])
 
+    if args.preserve_first and not args.randomize:
+        logging.warning("'Preserve first' specified without 'randomize.' This will have no effect")
+
+    if args.randomize:
+        if args.preserve_first:
+            fnames_rest = video_filenames[1:]
+            random.shuffle(fnames_rest)
+            video_filenames[1:] = fnames_rest
+        else:
+            random.shuffle(video_filenames)
+
     # make a tmp dir
     timestr = str(int(time.time()))
     tmp_dir = os.path.join(output_dir, f"tmp{timestr}")
@@ -164,7 +174,6 @@ def stitch(args: argparse.Namespace, clean: bool=True):
         )
 
     p = Parallel(n_jobs=-1, prefer="threads")(delayed(__execute)(i,f) for i,f in index_vidname_tuples)
-    print(p)
     # concat video files: ffmpeg -f concat -safe 0 -i mylist.txt -c copy output.mp4
     # the blessed way to concat files is to create a text file of filenames: "file [filepath]"
     filenames = [f"file '{f}'" for f in _ls(tmp_dir)]
@@ -192,6 +201,8 @@ def main(args):
 
     sub_stitch = subparsers.add_parser("stitch", help="Stitches all videos in a directory into one video")
     sub_stitch.add_argument("--clip-duration", default=0.2, type=float, help="the duration for each subclip")
+    sub_stitch.add_argument("--randomize", action="store_true", help="If specified, will randomize the order of images")
+    sub_stitch.add_argument("--preserve-first", action="store_true", default=True, help="If set, will preserve the first video even if others are randomized. Default true")
     sub_stitch.set_defaults(func=stitch)
 
     parser.add_argument("input", help="The input directory to process")
