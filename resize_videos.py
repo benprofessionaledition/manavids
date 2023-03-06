@@ -90,6 +90,7 @@ def resize(args: argparse.Namespace):
     output_resolution: int = args.output_resolution
     
     def __execute(filename):
+        nonlocal input_dir, output_dir, time_scale 
         if not filename.endswith(".mp4"):
             return
         input_file = os.path.join(input_dir, filename)
