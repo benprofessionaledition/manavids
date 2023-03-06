@@ -151,8 +151,6 @@ def stitch(args: argparse.Namespace, clean: bool=True):
     num_clips = int(total_duration / target_duration) # round down
 
     # next make a bunch of (index, filename) tuples and store them in a list so we can joblib it
-
-    # for some reason joblib blows up when you try to parallelize this saying the result can't be pickled? idfk
     index_vidname_tuples = [(i, video_filenames[i % num_vids]) for i in range(num_clips)]
     def __execute(i, clip_video):
         # round to avoid fp shit
