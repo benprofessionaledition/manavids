@@ -10,7 +10,7 @@ import shlex
 import json
 import argparse
 from joblib import Parallel, delayed
-from tqdm import tqdm
+from pprint import pprint
 
 import logging
 logging.basicConfig(level=logging.DEBUG)
@@ -139,16 +139,17 @@ def stitch(args: argparse.Namespace, clean: bool=True):
     target_duration = args.clip_duration
     num_vids = len(video_filenames)
     num_clips = int(total_duration / target_duration) # round down
-    for e, i in enumerate(range(num_clips)):
-        clip_video = video_filenames[i % num_vids]
+
+    # next make a bunch of (index, filename) tuples and store them in a list so we can joblib it
+
+    # for some reason joblib blows up when you try to parallelize this saying the result can't be pickled? idfk
+    index_vidname_tuples = [(i, video_filenames[i % num_vids]) for i in range(num_clips)]
+    def __execute(i, clip_video):
         # round to avoid fp shit
+        nonlocal target_duration, tmp_dir
         clip_start = round(i * target_duration, 2)
         clip_end = round(clip_start + target_duration, 2)
-        output_filename = os.path.join(tmp_dir, f"{e:06d}.mp4")
-        # this creates fucked up videos
-        # cmd = f"ffmpeg -ss {clip_start} -i {clip_video} -c copy -t {target_duration} {output_filename}"
-        # subprocess.run(shlex.split(cmd))
-
+        output_filename = os.path.join(tmp_dir, f"{i:06d}.mp4")
         (
             ffmpeg
                 .input(clip_video)
@@ -162,14 +163,18 @@ def stitch(args: argparse.Namespace, clean: bool=True):
                 .run()
         )
 
-
+    p = Parallel(n_jobs=-1, prefer="threads")(delayed(__execute)(i,f) for i,f in index_vidname_tuples)
+    print(p)
     # concat video files: ffmpeg -f concat -safe 0 -i mylist.txt -c copy output.mp4
-    # the blessed way to concat files is to create a text file of filenames
+    # the blessed way to concat files is to create a text file of filenames: "file [filepath]"
     filenames = [f"file '{f}'" for f in _ls(tmp_dir)]
     txt_filename = os.path.join(tmp_dir, "files.txt")
     with open(txt_filename, "w+") as outf:
         outf.writelines("\n".join(filenames))
     output_filename = os.path.join(output_dir, "output.mp4")
+    # blow it away because we lose the interactive console with joblib
+    if os.path.exists(output_filename):
+        os.remove(output_filename)
     cmd = f"ffmpeg -f concat -safe 0 -i {txt_filename} -c copy {output_filename}"
     subprocess.run(shlex.split(cmd))
     shutil.rmtree(tmp_dir)
