@@ -175,7 +175,7 @@ def main(args):
     subparsers = parser.add_subparsers()
     sub_resize = subparsers.add_parser("resize", help="Resize a directory of videos")
     sub_resize.add_argument("--time-scale", default=10.52, help="The timescale to normalize input files to")
-    sub_resize.add_argument("--output-resolution", default="480", help="The output resolution. All output is square, so only one number is required")
+    sub_resize.add_argument("--output-resolution", default="1080", help="The output resolution. All output is square, so only one number is required")
     sub_resize.set_defaults(func=resize)
 
     sub_stitch = subparsers.add_parser("stitch", help="Stitches all videos in a directory into one video")
