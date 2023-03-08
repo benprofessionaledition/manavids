@@ -105,19 +105,17 @@ def resize(args: argparse.Namespace):
 def _ls(directory):
     return sorted((os.path.join(directory, f)) for f in os.listdir(directory))
 
-def stitch(args: argparse.Namespace, clean: bool=True):
-    input_dir, output_dir = _process_input_output_dir(args)
+def stitch(args: argparse.Namespace):
     """
-    These are the ways we can do this:
-    1. The stupid way, but it's known to work with ffmpeg: create very short ~0.1s videos of the respective
+    Method creates very short ~0.1s videos of the respective
     parts of each video, then stitch all together
-    2. The intuitive way: create a new video and append the relevant parts of every file. This makes sense 
-    but I don't think it works with videos/ffmpeg
-    3. Another possibly less stupid way: save all the frames individually, instead of videos, to the dir and 
-    then make a video out of them
     """
+    input_dir, output_dir = _process_input_output_dir(args)
     # get all videos
+    if args.skip_every < 1:
+        raise RuntimeError("Cannot skip less than 1")
     video_filenames = sorted([os.path.join(input_dir, f) for f in os.listdir(input_dir) if f.endswith(".mp4")])
+    video_filenames = video_filenames[::args.skip_every]
 
     if args.preserve_first and not args.randomize:
         logging.warning("'Preserve first' specified without 'randomize.' This will have no effect")
@@ -178,7 +176,7 @@ def stitch(args: argparse.Namespace, clean: bool=True):
     txt_filename = os.path.join(tmp_dir, "files.txt")
     with open(txt_filename, "w+") as outf:
         outf.writelines("\n".join(filenames))
-    output_filename = os.path.join(output_dir, "output.mp4")
+    output_filename = os.path.join(output_dir, f"output{timestr}.mp4")
     # blow it away because we lose the interactive console with joblib and ffmpeg wants input
     if os.path.exists(output_filename):
         os.remove(output_filename)
@@ -198,6 +196,7 @@ def main(args):
     sub_resize.set_defaults(func=resize)
 
     sub_stitch = subparsers.add_parser("stitch", help="Stitches all videos in a directory into one video")
+    sub_stitch.add_argument("--skip-every", default=1, type=int, help="skips every N of the input")
     sub_stitch.add_argument("--clip-duration", default=0.2, type=float, help="the duration for each subclip")
     sub_stitch.add_argument("--randomize", action="store_true", help="If specified, will randomize the order of images")
     sub_stitch.add_argument("--preserve-first", action="store_true", default=True, help="If set, will preserve the first video even if others are randomized. Default true")
