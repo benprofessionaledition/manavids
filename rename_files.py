@@ -44,7 +44,7 @@ def main():
         if os.path.isdir(subdir):
             for f in os.listdir(subdir):
                 old_path = os.path.join(subdir, f)
-                if not os.isdir(old_path):
+                if not os.path.isdir(old_path):
                     if first_name is not None and first_name == old_path:
                         fnames.insert(0, old_path)
                     else:
