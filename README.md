@@ -1,8 +1,3 @@
-<<<<<<< HEAD
-# Manavids
-Stuff for Mana's AI art so that she'll sit with me on the couch instead of doing tedious shit with video editing
-
-=======
 # Mana's Fun Utilities
 
 This is a collection of Python scripts for Mana. 
@@ -33,4 +28,3 @@ Assume everything has to be run in Powershell as an administrator.
 1.  Install FFmpeg on Windows using this guide: https://www.wikihow.com/Install-FFmpeg-on-Windows
 1.  Create Python virtualenv and do `py -m pip install -r requirements.txt` and activate it, as above
 1.  Run the scripts, see above. Should work.
->>>>>>> master
