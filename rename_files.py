@@ -60,10 +60,10 @@ def main():
         fnames_final[old_path] = str(new_path)
     
     print(fnames_final)
-    with open("files_renamed.json", "w+") as fout:
-        json.dump(fnames_final, fout)
 
     if not args.dry_run:
+        with open("files_renamed.json", "w+") as fout:
+            json.dump(fnames_final, fout)
         for o, n in fnames_final.items():
             os.rename(o, n)
 
