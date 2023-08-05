@@ -61,7 +61,7 @@ def main():
         fnames_final[old_path] = str(new_path)
     
     print(fnames_final)
-
+    assert len(fnames_final) == 222, f"Found {len(fnames_final)} filenames but only expected 222:" + "\n".join(fnames_final)
     if not args.dry_run:
         with open(os.path.join(input_dir, "files_renamed.json"), "w+") as fout:
             json.dump(fnames_final, fout)
