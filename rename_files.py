@@ -62,7 +62,7 @@ def main():
     print(fnames_final)
 
     if not args.dry_run:
-        with open("files_renamed.json", "w+") as fout:
+        with open(os.path.join(input_dir, "files_renamed.json"), "w+") as fout:
             json.dump(fnames_final, fout)
         for o, n in fnames_final.items():
             os.rename(o, n)
