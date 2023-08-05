@@ -44,10 +44,11 @@ def main():
         if os.path.isdir(subdir):
             for f in os.listdir(subdir):
                 old_path = os.path.join(subdir, f)
-                if first_name is not None and first_name == old_path:
-                    fnames.insert(0, old_path)
-                else:
-                    fnames.append(old_path)
+                if not os.isdir(old_path):
+                    if first_name is not None and first_name == old_path:
+                        fnames.insert(0, old_path)
+                    else:
+                        fnames.append(old_path)
 
     # next assign them random indices and shuffle
     fnames_copy = copy.deepcopy(fnames[1:])
@@ -56,7 +57,7 @@ def main():
     fnames_final = {}
     for i, old_path in enumerate(fnames):
         path = pathlib.Path(old_path)
-        new_path = pathlib.Path(path.parent.parent, str(i) + path.suffix)
+        new_path = pathlib.Path(path.parent.parent, str(i+1) + path.suffix)
         fnames_final[old_path] = str(new_path)
     
     print(fnames_final)
