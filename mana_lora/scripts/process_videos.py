@@ -36,6 +36,27 @@ def probe_video(filename: str) -> VideoInfo:
     duration = vidstream['duration']
     return VideoInfo(int(height), int(width), float(duration))
 
+def bounce_video(stream, output_file):
+    stream_rev = (
+        stream[1]
+        .filter('reverse')
+        .filter('setpts', 'PTS-STARTPTS')
+    )
+    (
+        ffmpeg.concat(stream[0], stream_rev)
+        .output(output_file)
+        .overwrite_output()
+        .run()
+    )
+
+def bounce_only(input_file : str, output_file: str):
+    stream = (
+        ffmpeg
+        .input(input_file)
+        .split()
+    )
+    bounce_video(stream, output_file)
+
 
 def resize_and_bounce(input_file: str, output_file: str, output_res: str, scaling_constant: float=SCALING_DEFAULT):
     # crop to 1:1, change speed, clip at 3 and 6 seconds, paste reversed, export at 480x480
@@ -60,19 +81,7 @@ def resize_and_bounce(input_file: str, output_file: str, output_res: str, scalin
         .filter('scale', output_res, output_res)
         .split()
     )
-
-    stream_rev = (
-        stream[1]
-        .filter('reverse')
-        .filter('setpts', 'PTS-STARTPTS')
-    )
-
-    (
-        ffmpeg.concat(stream[0], stream_rev)
-        .output(output_file)
-        .overwrite_output()
-        .run()
-    )
+    bounce_video(stream, output_file)
 
 def _process_input_output_dir(args: argparse.Namespace):
     input_dir = args.input
@@ -87,15 +96,32 @@ def resize(args: argparse.Namespace):
     input_dir, output_dir = _process_input_output_dir(args)
     time_scale: float = args.time_scale
     output_resolution: int = args.output_resolution
-    
+
     def __execute(filename):
-        nonlocal input_dir, output_dir, time_scale 
+        nonlocal input_dir, output_dir, time_scale
         if not filename.endswith(".mp4"):
             return
         input_file = os.path.join(input_dir, filename)
         output_file = os.path.join(output_dir, filename)
         time_scale=float(time_scale)
         resize_and_bounce(input_file, output_file, output_resolution, time_scale)
+
+    filenames = [f for f in os.listdir(input_dir) if f.endswith(".mp4")]
+
+    # joblib has the worst syntax ever
+    Parallel(n_jobs=-1)(delayed(__execute)(f) for f in filenames)
+
+def bounce(args: argparse.Namespace):
+    #todo: this is copied and pasted from above, could prob just make the same function work
+    input_dir, output_dir = _process_input_output_dir(args)
+
+    def __execute(filename):
+        nonlocal input_dir, output_dir
+        if not filename.endswith(".mp4"):
+            return
+        input_file = os.path.join(input_dir, filename)
+        output_file = os.path.join(output_dir, filename)
+        bounce_only(input_file, output_file)
 
     filenames = [f for f in os.listdir(input_dir) if f.endswith(".mp4")]
 
@@ -138,11 +164,11 @@ def stitch(args: argparse.Namespace):
     # ffmpeg -ss 30 -i input.wmv -c copy -t 10 output.wmv
     # In the above command, the timestamps are in seconds (s.msec), but timestamps can also be in HH:MM:SS.xxx format. The following is equivalent:
     # ffmpeg -ss 00:00:30.0 -i input.wmv -c copy -t 00:00:10.0 output.wmv
-    
+
     # assume they're all the same length
     info = probe_video(video_filenames[0])
     total_duration = info.duration_seconds
-    
+
     # we're going to make it loop over all of them
     target_duration = args.clip_duration
     num_vids = len(video_filenames)
@@ -187,7 +213,7 @@ def stitch(args: argparse.Namespace):
 def main(args):
 
     parser = argparse.ArgumentParser(description="Wifey's video processing script")
-    
+
     # note to ben - you need to add subparser-specific args before global ones for some reason
     subparsers = parser.add_subparsers()
     sub_resize = subparsers.add_parser("resize", help="Resize a directory of videos")
@@ -202,12 +228,15 @@ def main(args):
     sub_stitch.add_argument("--preserve-first", action="store_true", default=True, help="If set, will preserve the first video even if others are randomized. Default true")
     sub_stitch.set_defaults(func=stitch)
 
+    sub_bounce = subparsers.add_parser("bounce", help="Make a directory of videos 'bounce' back and forth, with no resizing or anything")
+    sub_bounce.set_defaults(func=bounce)
+
     parser.add_argument("input", help="The input directory to process")
     parser.add_argument("--output-dir", default=None, help="The output directory. If none specified, creates a directory called \"output\" inside the input directory")
-    
+
     args = parser.parse_args(args)
     args.func(args)
-    
+
 
 if __name__ == '__main__':
     main(sys.argv[1:])
