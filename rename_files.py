@@ -32,6 +32,7 @@ def main():
 
     input_dir = args.input_dir
     print(input_dir)
+    input_dir = input_dir.replace("\"", "") # i don't know why the fuck windows does this
     abspath = os.path.abspath(input_dir)
     print(abspath)
     first_name = args.first_image
