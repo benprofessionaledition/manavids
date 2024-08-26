@@ -219,10 +219,10 @@ def main(args):
     # note to ben - you need to add subparser-specific args before global ones for some reason
     subparsers = parser.add_subparsers()
     sub_resize = subparsers.add_parser("resize", help="Resize a directory of videos")
-    sub_resize.add_argument("--time-scale", default=10.52, help="The timescale to normalize input files to")
+    sub_resize.add_argument("--time-scale", default=10.52, type=float, help="The timescale to normalize input files to")
     sub_resize.add_argument("--output-resolution", default="1080", help="The output resolution. All output is square, so only one number is required")
-    sub_resize.add_argument("--clip-start", default=3.0, help="Clip start timestamp")
-    sub_resize.add_argument("--clip-end", default=6.0, help="Clip end timestamp")
+    sub_resize.add_argument("--clip-start", default=3.0, type=float, help="Clip start timestamp")
+    sub_resize.add_argument("--clip-end", default=6.0, type=float, help="Clip end timestamp")
     sub_resize.set_defaults(func=resize)
 
     sub_stitch = subparsers.add_parser("stitch", help="Stitches all videos in a directory into one video")
